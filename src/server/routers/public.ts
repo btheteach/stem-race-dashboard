@@ -40,13 +40,8 @@ export function createPublicRouter() {
     sendDashboardHtml(res);
   });
 
-  router.get("/{*path}", (req, res, next) => {
+  router.use((req, res, next) => {
     if (req.path.startsWith("/admin")) {
-      next();
-      return;
-    }
-
-    if (path.extname(req.path)) {
       next();
       return;
     }

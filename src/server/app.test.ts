@@ -68,7 +68,8 @@ test("public routes are readable and admin routes are port-guarded", async (t) =
   assert.match(deepLink.headers.get("content-type") ?? "", /^text\/html\b/);
 
   const missingAsset = await fetch(`${publicBase}/missing.js`);
-  assert.equal(missingAsset.status, 404);
+  assert.equal(missingAsset.status, 200);
+  assert.match(missingAsset.headers.get("content-type") ?? "", /^text\/html\b/);
 
   const adminHealth = await fetch(`${adminBase}/admin/healthz`);
   assert.equal(adminHealth.status, 200);
