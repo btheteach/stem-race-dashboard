@@ -1,13 +1,13 @@
 teams: # []
-  - id: red
-    name: Red Rockets
-    score: 10
-  - id: blue
-    name: Blue Blazers
-    score: 7
-  - id: yellow
-    name: Yellow Rockets
-    score: 6
-  - id: Green
-    name: Green Blazers
-    score: 5
+  - id: mindfield
+    name: The MindField
+    score: 0
+  - id: fitten
+    name: Fitten Foundation
+    score: 0
+  - id: ques
+    name: Theta Alpha
+    score: 0
+  - id: rhos
+    name: Alpha Omicron Sigma
+    score: 0
