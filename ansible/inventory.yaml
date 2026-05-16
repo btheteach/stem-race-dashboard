@@ -1,0 +1,4 @@
+all:
+  hosts:
+    stem-race-dashboard:
+      ansible_host: 18.189.185.199

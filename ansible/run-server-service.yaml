@@ -1,0 +1,68 @@
+---
+- name: Ensure STEM Race Dashboard service is running
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    app_name: stem-race-dashboard
+    app_user: ubuntu
+    app_dir: "/home/{{ app_user }}/stem-race-dashboard"
+    repo_url: "https://github.com/btheteach/stem-race-dashboard.git"
+    public_host: "0.0.0.0"
+    public_port: "8080"
+    admin_host: "127.0.0.1"
+    admin_port: "8081"
+
+  tasks:
+    - name: Verify Ubuntu Noble host
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version is version('24.04', '>=')
+        fail_msg: "This playbook expects Ubuntu 24.04+ (Noble)."
+
+    - name: Ensure bootstrap script exists in app dir
+      ansible.builtin.stat:
+        path: "{{ app_dir }}/bootstrap-ec2-noble.sh"
+      register: bootstrap_script
+
+    - name: Fail if bootstrap script is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ app_dir }}/bootstrap-ec2-noble.sh. Clone/copy repo first."
+      when: not bootstrap_script.stat.exists
+
+    - name: Check current service state
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+      register: service_state
+      failed_when: false
+
+    - name: Run bootstrap when service is not installed or not running
+      ansible.builtin.command: bash "{{ app_dir }}/bootstrap-ec2-noble.sh"
+      environment:
+        APP_USER: "{{ app_user }}"
+        APP_DIR: "{{ app_dir }}"
+        REPO_URL: "{{ repo_url }}"
+        PUBLIC_HOST: "{{ public_host }}"
+        PUBLIC_PORT: "{{ public_port }}"
+        ADMIN_HOST: "{{ admin_host }}"
+        ADMIN_PORT: "{{ admin_port }}"
+      when: >-
+        service_state.status is not defined or
+        service_state.status.ActiveState | default('inactive') != 'active'
+
+    - name: Ensure service is enabled and running
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+        enabled: true
+        state: started
+
+    - name: Show final service status
+      ansible.builtin.command: systemctl --no-pager --full status "{{ app_name }}"
+      register: final_status
+      changed_when: false
+
+    - name: Print service status summary
+      ansible.builtin.debug:
+        msg: "{{ final_status.stdout_lines[:12] }}"

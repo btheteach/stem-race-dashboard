@@ -1,0 +1,10 @@
+[project]
+name = "stem-race-dashboard-tools"
+version = "0.1.0"
+description = "Local tooling for infrastructure tasks"
+requires-python = ">=3.11"
+
+[dependency-groups]
+dev = [
+  "ansible-core>=2.17,<2.19",
+]
