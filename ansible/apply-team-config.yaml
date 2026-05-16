@@ -1,0 +1,66 @@
+---
+- name: Apply team IDs/names/scores from YAML config
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    app_name: stem-race-dashboard
+    app_user: ubuntu
+    remote_work_dir: "/home/{{ app_user }}/stem-race-dashboard/.ops"
+    local_team_config: "config/teams.yaml"
+    remote_team_config: "{{ remote_work_dir }}/teams.yaml"
+    remote_script_path: "{{ remote_work_dir }}/set_teams_from_yaml.py"
+    public_base: "http://127.0.0.1:8080"
+    admin_base: "http://127.0.0.1:8081"
+
+  tasks:
+    - name: Ensure service is running first
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+        state: started
+
+    - name: Install Python YAML dependency
+      ansible.builtin.apt:
+        name: python3-yaml
+        state: present
+        update_cache: true
+
+    - name: Ensure remote ops directory exists
+      ansible.builtin.file:
+        path: "{{ remote_work_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Copy team config YAML to host
+      ansible.builtin.copy:
+        src: "{{ local_team_config }}"
+        dest: "{{ remote_team_config }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0644"
+
+    - name: Copy apply script to host
+      ansible.builtin.copy:
+        src: files/set_teams_from_yaml.py
+        dest: "{{ remote_script_path }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Apply team configuration
+      ansible.builtin.command:
+        cmd: >-
+          python3 {{ remote_script_path }}
+          --config {{ remote_team_config }}
+          --public-base {{ public_base }}
+          --admin-base {{ admin_base }}
+      become_user: "{{ app_user }}"
+      register: apply_result
+      changed_when: true
+
+    - name: Show script output
+      ansible.builtin.debug:
+        var: apply_result.stdout_lines

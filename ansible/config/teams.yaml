@@ -1,0 +1,13 @@
+teams:
+  - id: red
+    name: Red Rockets
+    score: 10
+  - id: blue
+    name: Blue Blazers
+    score: 7
+  - id: yellow
+    name: Yellow Rockets
+    score: 6
+  - id: Green
+    name: Green Blazers
+    score: 5
