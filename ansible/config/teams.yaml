@@ -1,4 +1,4 @@
-teams:
+teams: # []
   - id: red
     name: Red Rockets
     score: 10

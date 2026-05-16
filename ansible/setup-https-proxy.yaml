@@ -1,0 +1,96 @@
+---
+- name: Configure HTTPS reverse proxy for STEM Race Dashboard (Caddy)
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    app_name: stem-race-dashboard
+    dashboard_upstream_host: "127.0.0.1"
+    dashboard_upstream_port: 8080
+    dashboard_domain: "ta-stem-raceday.com"
+    caddy_admin_email: "knowledgexbrown@gmail.com"
+
+  tasks:
+    - name: Verify Ubuntu host
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+        fail_msg: "This playbook expects Ubuntu hosts."
+
+    - name: Install HTTPS proxy dependencies
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - debian-keyring
+          - debian-archive-keyring
+          - apt-transport-https
+          - curl
+        state: present
+        update_cache: true
+
+    - name: Ensure keyring directory exists
+      ansible.builtin.file:
+        path: /usr/share/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Install Caddy signing key
+      ansible.builtin.get_url:
+        url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+        dest: /tmp/caddy-stable-gpg.key
+        mode: "0644"
+
+    - name: De-armor Caddy signing key
+      ansible.builtin.command:
+        cmd: gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg /tmp/caddy-stable-gpg.key
+      args:
+        creates: /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+
+    - name: Configure Caddy apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.gpg] https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main"
+        filename: caddy-stable
+        state: present
+
+    - name: Install Caddy
+      ansible.builtin.apt:
+        name: caddy
+        state: present
+        update_cache: true
+
+    - name: Write Caddyfile for dashboard HTTPS reverse proxy
+      ansible.builtin.copy:
+        dest: /etc/caddy/Caddyfile
+        mode: "0644"
+        content: |
+          {
+            email {{ caddy_admin_email }}
+          }
+
+          {{ dashboard_domain }} {
+            encode zstd gzip
+            reverse_proxy {{ dashboard_upstream_host }}:{{ dashboard_upstream_port }}
+          }
+      notify:
+        - Reload caddy
+
+    - name: Ensure Caddy service is enabled and running
+      ansible.builtin.systemd:
+        name: caddy
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Print helpful DNS/security-group reminder
+      ansible.builtin.debug:
+        msg:
+          - "Point DNS A/AAAA for {{ dashboard_domain }} to this EC2 instance."
+          - "Allow inbound TCP 80 and 443 in the EC2 security group."
+          - "Keep app admin port private (no public security-group rule for 8081)."
+
+  handlers:
+    - name: Reload caddy
+      ansible.builtin.systemd:
+        name: caddy
+        state: reloaded

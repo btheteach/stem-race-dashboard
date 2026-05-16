@@ -155,6 +155,28 @@ curl -sS http://<host>:8080/state
 - This version uses in-memory storage; data is lost on restart.
 - For long-running deployments, run under a process manager (for example `systemd`, `pm2`, or container orchestration).
 
+## EC2 HTTPS Proxy (Caddy)
+
+This repo includes an Ansible playbook that sets up a simple HTTPS reverse proxy
+in front of the dashboard for AWS EC2.
+
+1. Deploy/start the dashboard service first:
+   - `ansible-playbook -i ansible/inventory.yaml ansible/run-server-service.yaml`
+2. Point your DNS A record to the EC2 public IP:
+   - Example: `dashboard.yourdomain.com -> <ec2-public-ip>`
+3. Ensure EC2 security group allows inbound TCP `80` and `443`.
+4. Run the HTTPS proxy setup playbook:
+   - `ansible-playbook -i ansible/inventory.yaml ansible/setup-https-proxy.yaml -e "dashboard_domain=dashboard.yourdomain.com caddy_admin_email=you@yourdomain.com"`
+
+After DNS propagation and certificate issuance, open:
+
+- `https://dashboard.yourdomain.com/`
+
+Notes:
+
+- Caddy terminates TLS and proxies to `127.0.0.1:8080`.
+- Keep port `8081` private; do not expose admin endpoints publicly.
+
 ## Troubleshooting
 
 - If `/` shows fallback HTML, run `npm run build` to generate client assets.

@@ -97,3 +97,11 @@ curl -sS -X POST "$ADMIN_BASE/admin/teams" -H 'content-type: application/json' -
 curl -sS -X POST "$ADMIN_BASE/admin/teams/red/score/inc" -H 'content-type: application/json' -d '{"by":3}';
 curl -sS "$PUBLIC_BASE/state";
 ```
+
+## EC2 Deployment + HTTPS Proxy
+
+```bash
+ansible-playbook -i ansible/inventory.yaml ansible/run-server-service.yaml
+ansible-playbook -i ansible/inventory.yaml ansible/setup-https-proxy.yaml \
+  -e "dashboard_domain=dashboard.yourdomain.com caddy_admin_email=you@yourdomain.com"
+```
