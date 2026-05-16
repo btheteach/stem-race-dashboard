@@ -7,7 +7,7 @@
   vars:
     app_name: stem-race-dashboard
     dashboard_upstream_host: "127.0.0.1"
-    dashboard_upstream_port: 8080
+    dashboard_upstream_port: 80
     dashboard_domain: "ta-stem-raceday.com"
     caddy_admin_email: "knowledgexbrown@gmail.com"
 
