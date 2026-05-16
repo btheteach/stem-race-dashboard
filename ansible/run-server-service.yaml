@@ -125,6 +125,8 @@
           ADMIN_HOST={{ admin_host }}
           ADMIN_PORT={{ admin_port }}
           NODE_ENV=production
+      notify:
+        - Restart app service
 
     - name: Install systemd service unit
       ansible.builtin.copy:
@@ -148,6 +150,7 @@
           WantedBy=multi-user.target
       notify:
         - Reload systemd
+        - Restart app service
 
     - name: Ensure service is enabled and running
       ansible.builtin.systemd:
@@ -169,3 +172,8 @@
     - name: Reload systemd
       ansible.builtin.systemd:
         daemon_reload: true
+
+    - name: Restart app service
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+        state: restarted
