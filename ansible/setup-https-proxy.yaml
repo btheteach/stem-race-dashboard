@@ -7,9 +7,10 @@
   vars:
     app_name: stem-race-dashboard
     dashboard_upstream_host: "127.0.0.1"
-    dashboard_upstream_port: 80
+    dashboard_upstream_port: 8080
     dashboard_domain: "ta-stem-raceday.com"
     caddy_admin_email: "knowledgexbrown@gmail.com"
+    tls_terminated_at_alb: true
 
   tasks:
     - name: Verify Ubuntu host
@@ -64,6 +65,16 @@
         dest: /etc/caddy/Caddyfile
         mode: "0644"
         content: |
+          {% if tls_terminated_at_alb %}
+          {
+            auto_https off
+          }
+
+          :80 {
+            encode zstd gzip
+            reverse_proxy {{ dashboard_upstream_host }}:{{ dashboard_upstream_port }}
+          }
+          {% else %}
           {
             email {{ caddy_admin_email }}
           }
@@ -72,6 +83,7 @@
             encode zstd gzip
             reverse_proxy {{ dashboard_upstream_host }}:{{ dashboard_upstream_port }}
           }
+          {% endif %}
       notify:
         - Reload caddy
 
@@ -85,8 +97,8 @@
     - name: Print helpful DNS/security-group reminder
       ansible.builtin.debug:
         msg:
-          - "Point DNS A/AAAA for {{ dashboard_domain }} to this EC2 instance."
-          - "Allow inbound TCP 80 and 443 in the EC2 security group."
+          - "tls_terminated_at_alb={{ tls_terminated_at_alb }}."
+          - "Allow inbound TCP 80 to this host; allow 443 only if Caddy terminates TLS."
           - "Keep app admin port private (no public security-group rule for 8081)."
 
   handlers:
